@@ -1,0 +1,14 @@
+# Visual Studio
+.vs/
+
+# Build output
+bin/
+obj/
+
+# User-specific
+*.user
+*.suo
+
+# OS-generated
+Thumbs.db
+desktop.ini

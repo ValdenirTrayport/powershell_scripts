@@ -1,4 +1,4 @@
-$scriptDir = "C:\scripts\Restore Database Backup\v2"
+$scriptDir = "C:\scripts\RestoreDatabaseBackup\v2"
 $modulePath = Join-Path $scriptDir "Common.psm1"
 
 if (Test-Path $modulePath) {

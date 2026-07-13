@@ -1,5 +1,5 @@
 # Define your input and output paths
-$inputFile = "C:\scripts\projects for conversion.txt"
+$inputFile = "C:\scripts\projects-for-conversion.txt"
 $outputFile = "C:\Users\valdenirf\Desktop\framework_results.csv"
 
 function Get-Normalised-Framework-Version {

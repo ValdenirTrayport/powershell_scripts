@@ -112,7 +112,7 @@ foreach ($dir in $directories) {
                     Write-Host "  [Config files found] Backing up configurations for '$($dir.Name)'..." -ForegroundColor Cyan
                     
                     # Run the backup script synchronously and silently in the background
-                    & "C:\scripts\backup-restore-config.ps1" -Operation Backup *>$null
+                    & "C:\scripts\Sync-ConfigBackup.ps1" -Operation Backup *>$null
                     
                     # Set flag to true so it skips running this script again for subsequent repos
                     $backupExecuted = $true
