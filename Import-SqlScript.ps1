@@ -1,44 +1,62 @@
-# 1. Configuration & Input
-$InputFile = Read-Host "Paste the full path to your 1.4GB SQL script"
-$InputFile = $InputFile.Replace('"', '') 
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Imports a large SQL script file into SQL Server using sqlcmd.
 
-if (Test-Path $InputFile) {
-    $Server = "." 
-    $LogFile = "$PSScriptRoot\import_errors.log"
+.DESCRIPTION
+    Executes a SQL script file against the local SQL Server instance using sqlcmd
+    with optimised settings for large files (UTF-16 LE support, variable substitution
+    disabled, error-only output mode).
 
-    Write-Host "`n[SYSTEM] Starting Massive Data Import (v1.9.0 Engine)..." -ForegroundColor Cyan
-    Write-Host "[INFO] Auto-detecting Encoding (UTF-16 LE BOM supported)"
-    Write-Host "[INFO] Errors only mode enabled."
-    Write-Host "------------------------------------------------"
+.PARAMETER FilePath
+    Full path to the SQL script file to import.
 
-    # 2. Start the Timer
-    $Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+.PARAMETER Server
+    SQL Server instance name. Defaults to localhost (.).
 
-    # 3. Execute v1.9.0 SQLCMD
-    # -S: Server
-    # -i: Input File
-    # -b: Exit on error
-    # -m 1: This is the 'Quiet' flag (Severity 1 and above only)
-    # -x: Disables variable substitution (Stops JSON $(...) from crashing)
-    # -r 1: Redirects messages to stderr
-    sqlcmd -S . -i "$InputFile" -x -b -m 1 -r 1 2> "$LogFile"
+.EXAMPLE
+    .\Import-SqlScript.ps1 -FilePath "C:\Backups\TRAYINVOICE_data.sql"
 
-    # 4. Stop the Timer
-    $Stopwatch.Stop()
-    $Time = $Stopwatch.Elapsed
+.EXAMPLE
+    .\Import-SqlScript.ps1 -FilePath "C:\Backups\data.sql" -Server "bs-tsql22"
+#>
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string]$FilePath,
 
-    # 5. Result Logic
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "`n[SUCCESS] Import finished successfully!" -ForegroundColor Green
-    } else {
-        Write-Host "`n[FAILED] The import stopped. Check the log: $LogFile" -ForegroundColor Red
-        # Show the actual SQL error from the log
-        Get-Content $LogFile -TotalCount 10 | Write-Host -ForegroundColor Gray
-    }
+    [Parameter()]
+    [string]$Server = "."
+)
 
-    Write-Host "Total Execution Time: $($Time.Hours)h $($Time.Minutes)m $($Time.Seconds)s"
-} else {
-    Write-Host "`n[ERROR] File not found." -ForegroundColor Red
+$ErrorActionPreference = 'Stop'
+
+$LogFile = Join-Path -Path $PSScriptRoot -ChildPath "import_errors.log"
+
+Write-Host "`nStarting SQL Import..." -ForegroundColor Cyan
+Write-Host "  File:   $FilePath" -ForegroundColor Gray
+Write-Host "  Server: $Server" -ForegroundColor Gray
+Write-Host "  Log:    $LogFile" -ForegroundColor Gray
+Write-Host "------------------------------------------------"
+
+$Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+# -x: Disables variable substitution (prevents JSON $(...) from crashing)
+# -b: Exit on error
+# -m 1: Severity 1+ only (quiet mode)
+# -r 1: Redirects messages to stderr
+sqlcmd -S $Server -i "$FilePath" -x -b -m 1 -r 1 2> "$LogFile"
+
+$Stopwatch.Stop()
+$Time = $Stopwatch.Elapsed
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "`n[SUCCESS] Import finished successfully!" -ForegroundColor Green
+}
+else {
+    Write-Host "`n[FAILED] The import stopped. Check the log: $LogFile" -ForegroundColor Red
+    Get-Content -LiteralPath $LogFile -TotalCount 10 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
 }
 
-Read-Host "`nPress Enter to exit"
+Write-Host "Total Execution Time: $($Time.Hours)h $($Time.Minutes)m $($Time.Seconds)s`n"

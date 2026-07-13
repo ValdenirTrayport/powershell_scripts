@@ -1,19 +1,31 @@
-#
-#	This script moves files to a new location while keeping its history
-#	Usage:
-#		Add this scrript to your system Path
-#		Call the script from the folder where the source script is
-#
-[CmdletBinding(SupportsShouldProcess=$true)]
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Moves a file to a new location while preserving its full Git history.
+
+.DESCRIPTION
+    Uses a two-commit strategy to move a file and then restore the original,
+    ensuring both locations retain the complete commit history.
+
+.PARAMETER SourceFilePath
+    The path of the source file to move.
+
+.PARAMETER DestinationFile
+    The destination file path or directory.
+
+.EXAMPLE
+    .\Move-GitFileWithHistory.ps1 -SourceFilePath "src\OldFile.cs" -DestinationFile "src\NewFolder\"
+#>
+[CmdletBinding(SupportsShouldProcess)]
 param(
-    [Parameter(Mandatory=$true, HelpMessage="Enter the source file path.")]
+    [Parameter(Mandatory, HelpMessage = "Enter the source file path.")]
     [string]$SourceFilePath,
 
-    [Parameter(Mandatory=$true, HelpMessage="Enter the destination file path.")]
+    [Parameter(Mandatory, HelpMessage = "Enter the destination file path.")]
     [string]$DestinationFile
 )
 
-cls
+$ErrorActionPreference = 'Stop'
 
 $SourceFileDirectory = Split-Path -Path $SourceFilePath -Parent
 Set-Location -Path $SourceFileDirectory
@@ -29,22 +41,21 @@ If(Test-Path -Path $DestinationFile -PathType Container){
 
 Write-Host "Moving $SourceFile to $DestinationFile and keeping history"
 
-if ($pscmdlet.shouldcontinue("are you sure you want to move`n$($sourcefile) to`n$($destinationfile)?`n this will unstage any eventual staged files and commit files to your branch.", "confirm move")){
+if ($PSCmdlet.ShouldProcess($SourceFile, "Move to $DestinationFile (preserving git history)")) {
 
-	#this command will unstage everything that might be in the staging area as we need a clean staging area for this operation
+	# Unstage any staged files — we need a clean staging area
 	git restore --staged .
 
-	#this command will move the file to its new location, preserving the history
-	git mv $sourcefile $destinationfile
+	# Move the file preserving history
+	git mv $SourceFile $DestinationFile
 
-	#this will commit the new file
-	git commit -m "moved $sourcefile to $destinationfile"
+	# Commit the move
+	git commit -m "moved $SourceFile to $DestinationFile"
 
-	#this command will restore the original file back to its original location and history
-	git checkout head^ -- $sourcefile
+	# Restore the original file back
+	git checkout HEAD^ -- $SourceFile
 
-	#this command will commit the original file back into the branch
-	git commit -m "restored $sourcefile and its history"
-
+	# Commit the restoration
+	git commit -m "restored $SourceFile and its history"
 }
 

@@ -1,18 +1,40 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Automates the deployment and rollback of performance tuning indexes 
+    Automates the deployment and rollback of performance tuning indexes
     and lock escalation overrides for TRAYINVOICE.
+
+.PARAMETER Action
+    Implement or Revert the index changes.
+
+.PARAMETER Environment
+    Target environment: Local, Test, Approval, or ApprovalSlim.
+
+.EXAMPLE
+    .\Invoke-IndexAutomation.ps1 -Action Implement -Environment Local
+
+.EXAMPLE
+    .\Invoke-IndexAutomation.ps1 -Action Revert -Environment Test
 #>
+[CmdletBinding(SupportsShouldProcess)]
+param(
+    [Parameter(Mandatory)]
+    [ValidateSet('Implement', 'Revert')]
+    [string]$Action,
+
+    [Parameter(Mandatory)]
+    [ValidateSet('Local', 'Test', 'Approval', 'ApprovalSlim')]
+    [string]$Environment
+)
+
+$ErrorActionPreference = 'Stop'
 
 # ==============================================================================
-# 1. DEFINE ENVIRONMENTS & CONNECTION STRINGS
+# 1. LOAD CONNECTION STRING FROM CENTRALISED CONFIG
 # ==============================================================================
-$environments = @{
-    "1" = @{ Name = "Local";         ConnectionString = "Data Source=localhost;Initial Catalog=TRAYINVOICE;Integrated Security=True;TrustServerCertificate=True;Encrypt=True" }
-    "2" = @{ Name = "Test";          ConnectionString = "Data Source=bs-tsql22;Initial Catalog=TRAYINVOICE;Integrated Security=True;TrustServerCertificate=True;Encrypt=True" }
-    "3" = @{ Name = "Approval";      ConnectionString = "Data Source=bs-dsql22;Initial Catalog=TRAYINVOICE;Integrated Security=True;TrustServerCertificate=True;Encrypt=True" }
-    "4" = @{ Name = "Approval_Slim"; ConnectionString = "Data Source=bs-dsql22;Initial Catalog=TRAYINVOICE_SLIM;Integrated Security=True;TrustServerCertificate=True;Encrypt=True" }
-}
+$configPath = Join-Path -Path $PSScriptRoot -ChildPath "config\ConnectionStrings.json"
+$connections = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+$selectedConn = $connections.$Environment.ConnectionString
 
 # ==============================================================================
 # 2. DEFINE SQL SCRIPTS
@@ -156,78 +178,36 @@ GO
 "@
 
 # ==============================================================================
-# 3. USER INTERFACE
+# 3. EXECUTION
 # ==============================================================================
-Clear-Host
+$scriptToRun = if ($Action -eq 'Implement') { $implementScript } else { $revertScript }
+
+Write-Host "`n=============================================" -ForegroundColor Cyan
+Write-Host " INDEX AUTOMATION: $Action on $Environment"    -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
-Write-Host " DATABASE PERFORMANCE INDEX AUTOMATION TOOL" -ForegroundColor Cyan
-Write-Host "=============================================" -ForegroundColor Cyan
-Write-Host ""
 
-Write-Host "Please select the target environment:"
-Write-Host "  [1] Local"
-Write-Host "  [2] Test"
-Write-Host "  [3] Approval"
-Write-Host "  [4] Approval_Slim"
-$envChoice = Read-Host "Enter your choice (1-4)"
-
-if (-not $environments.ContainsKey($envChoice)) {
-    Write-Host "Invalid environment selection. Exiting." -ForegroundColor Red
-    exit
+if (-not $PSCmdlet.ShouldProcess("$Environment database", "$Action performance indexes")) {
+    return
 }
 
-$selectedEnv = $environments[$envChoice]
-Write-Host ("`nYou selected: " + $selectedEnv.Name) -ForegroundColor Green
-Write-Host ""
-
-Write-Host "What would you like to do?"
-Write-Host "  [I] Implement performance indexes & changes"
-Write-Host "  [R] Revert changes (Drop indexes & re-enable escalation)"
-$actionChoice = Read-Host "Enter your choice (I/R)"
-
-$scriptToRun = ""
-$actionName = ""
-
-if ($actionChoice -eq 'I' -or $actionChoice -eq 'i') {
-    $scriptToRun = $implementScript
-    $actionName = "IMPLEMENT"
-} elseif ($actionChoice -eq 'R' -or $actionChoice -eq 'r') {
-    $scriptToRun = $revertScript
-    $actionName = "REVERT"
-} else {
-    Write-Host "Invalid action selection. Exiting." -ForegroundColor Red
-    exit
-}
-
-Write-Host "`nReady to $actionName changes on $($selectedEnv.Name) database." -ForegroundColor Yellow
-$confirm = Read-Host "Are you sure you want to proceed? (Y/N)"
-
-if ($confirm -ne 'Y' -and $confirm -ne 'y') {
-    Write-Host "Operation cancelled by user." -ForegroundColor Yellow
-    exit
-}
-
-# ==============================================================================
-# 4. EXECUTION LOGIC
-# ==============================================================================
 Write-Host "`nConnecting to database..." -ForegroundColor Cyan
 
+$connection = $null
 try {
-    # Initialize SQL Connection
     $connection = New-Object System.Data.SqlClient.SqlConnection
-    $connection.ConnectionString = $selectedEnv.ConnectionString
+    $connection.ConnectionString = $selectedConn
     $connection.Open()
 
-    # Split the script by 'GO' to handle batches (since .NET SqlCommand doesn't support GO natively)
+    # Split the script by 'GO' to handle batches (.NET SqlCommand doesn't support GO natively)
     $batches = $scriptToRun -split "(?m)^\s*GO\s*$"
 
     $command = $connection.CreateCommand()
-    $command.CommandTimeout = 300 # 5 minutes timeout for heavy index builds
+    $command.CommandTimeout = 300
 
     $batchCount = 1
     foreach ($batch in $batches) {
         if (-not [string]::IsNullOrWhiteSpace($batch)) {
-            Write-Host "Executing Batch $batchCount..." -ForegroundColor DarkGray
+            Write-Host "  Executing Batch $batchCount..." -ForegroundColor DarkGray
             $command.CommandText = $batch
             $command.ExecuteNonQuery() | Out-Null
             $batchCount++
@@ -235,16 +215,14 @@ try {
     }
 
     Write-Host "`n=============================================" -ForegroundColor Green
-    Write-Host " SUCCESS: $actionName completed on $($selectedEnv.Name)." -ForegroundColor Green
+    Write-Host " SUCCESS: $Action completed on $Environment." -ForegroundColor Green
     Write-Host "=============================================" -ForegroundColor Green
-
-} catch {
-    Write-Host "`n=============================================" -ForegroundColor Red
-    Write-Host " ERROR: Failed to execute script." -ForegroundColor Red
-    Write-Host " Details: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "=============================================" -ForegroundColor Red
-} finally {
-    if ($connection.State -eq 'Open') {
+}
+catch {
+    Write-Error "Failed to execute $Action on ${Environment}: $($_.Exception.Message)"
+}
+finally {
+    if ($null -ne $connection -and $connection.State -eq 'Open') {
         $connection.Close()
     }
 }

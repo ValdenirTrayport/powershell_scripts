@@ -1,0 +1,22 @@
+{
+    "Local": {
+        "Server": "localhost",
+        "Database": "TRAYINVOICE",
+        "ConnectionString": "Data Source=localhost;Initial Catalog=TRAYINVOICE;Integrated Security=True;TrustServerCertificate=True;Encrypt=True"
+    },
+    "Test": {
+        "Server": "bs-tsql22",
+        "Database": "TRAYINVOICE",
+        "ConnectionString": "Data Source=bs-tsql22;Initial Catalog=TRAYINVOICE;Integrated Security=True;TrustServerCertificate=True;Encrypt=True"
+    },
+    "Approval": {
+        "Server": "bs-dsql22",
+        "Database": "TRAYINVOICE",
+        "ConnectionString": "Data Source=bs-dsql22;Initial Catalog=TRAYINVOICE;Integrated Security=True;TrustServerCertificate=True;Encrypt=True"
+    },
+    "ApprovalSlim": {
+        "Server": "bs-dsql22",
+        "Database": "TRAYINVOICE_SLIM",
+        "ConnectionString": "Data Source=bs-dsql22;Initial Catalog=TRAYINVOICE_SLIM;Integrated Security=True;TrustServerCertificate=True;Encrypt=True"
+    }
+}
