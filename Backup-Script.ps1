@@ -1,11 +1,21 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-Archives and versions scripts from C:\scripts into C:\scripts\archive.
-Displays available scripts in a multi-column format.
-#>
+    Archives and versions scripts from C:\scripts into C:\scripts\archive.
 
-$sourceDir = "C:\scripts"
-$archiveDir = "C:\scripts\archive"
+.DESCRIPTION
+    Displays available scripts in a multi-column format, prompts for selection,
+    then creates a versioned copy (e.g. script_v3.ps1) in the archive folder.
+    Duplicate detection via MD5 hash prevents redundant versions.
+
+.EXAMPLE
+    .\Backup-Script.ps1
+#>
+[CmdletBinding()]
+param()
+
+$sourceDir  = $PSScriptRoot
+$archiveDir = Join-Path -Path $PSScriptRoot -ChildPath "archive"
 
 # Ensure the archive directory exists
 if (-not (Test-Path $archiveDir)) {
@@ -18,7 +28,7 @@ $files = Get-ChildItem -Path $sourceDir -File
 
 if ($files.Count -eq 0) {
     Write-Host "No files found in $sourceDir." -ForegroundColor Yellow
-    exit
+    return
 }
 
 Write-Host "`n Available Scripts in $sourceDir :`n" -ForegroundColor Cyan
@@ -50,7 +60,7 @@ $selection = Read-Host "Enter the number of the script to archive (or press Ente
 # Validate input
 if ([string]::IsNullOrWhiteSpace($selection) -or $selection -notmatch '^\d+$' -or [int]$selection -lt 1 -or [int]$selection -gt $files.Count) {
     Write-Warning "Operation cancelled or invalid selection."
-    exit
+    return
 }
 
 # Get the selected file

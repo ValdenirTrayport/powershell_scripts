@@ -1,3 +1,20 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Scans all repositories in C:\dev and pulls the latest from main/master.
+
+.DESCRIPTION
+    Iterates through all first-level directories under C:\dev, checks out the
+    default branch (main or master), backs up modified config files, cleans
+    .vs folders, and performs a fetch + rebase. Non-git directories are
+    automatically added to an exclusion list.
+
+.EXAMPLE
+    .\Update-Repos.ps1
+#>
+[CmdletBinding()]
+param()
+
 # Configuration
 $targetDir = "C:\dev"
 # Places the specific exclusion file name in the same directory as this script
@@ -17,7 +34,7 @@ if (Test-Path $exclusionFile) {
 # Ensure the target directory exists
 if (-not (Test-Path $targetDir)) {
     Write-Error "Target directory '$targetDir' does not exist."
-    exit
+    return
 }
 
 # Track whether the backup script has been executed during this run

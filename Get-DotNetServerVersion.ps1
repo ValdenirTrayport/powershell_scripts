@@ -1,3 +1,18 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Queries remote servers for their installed .NET runtime versions.
+
+.DESCRIPTION
+    Connects to all known Barri infrastructure servers via PSRemoting and
+    reports installed .NET runtimes in a formatted table.
+
+.EXAMPLE
+    .\Get-DotNetServerVersion.ps1
+#>
+[CmdletBinding()]
+param()
+
 # 1. Define the raw input data
 $rawServerList = @"
 PROD	is-barri01

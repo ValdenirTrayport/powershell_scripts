@@ -1,8 +1,26 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Deploys .NET Hosting Bundle to remote servers.
+
+.DESCRIPTION
+    Copies the .NET Hosting installer to targeted servers via PSRemoting
+    and performs a silent installation. Automatically skips servers that
+    are already on the target version or higher.
+
+.EXAMPLE
+    .\Install-DotNetHosting.ps1
+#>
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+
 # =====================================================================
 # 1. Configuration & Interactive Prompt
 # =====================================================================
 
-# 🎯 The target version we are deploying (extracted from the filename)
+# The target version we are deploying (extracted from the filename)
 $TargetVersionStr = "10.0.8"
 $TargetVersion    = [version]$TargetVersionStr
 

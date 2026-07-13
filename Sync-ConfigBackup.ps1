@@ -1,5 +1,25 @@
-# This file backs up or restores config files to/from a storage folder
-param(    
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Backs up or restores development config files to/from a network share.
+
+.DESCRIPTION
+    Synchronises environment-specific configuration files (Debug.config,
+    Development.json, targeted Web.config) between the local dev folder
+    and a personal backup repository on the network file share.
+
+.PARAMETER Operation
+    Backup copies local files to the network. Restore copies them back.
+
+.EXAMPLE
+    .\Sync-ConfigBackup.ps1 -Operation Backup
+
+.EXAMPLE
+    .\Sync-ConfigBackup.ps1 -Operation Restore
+#>
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)]
     [ValidateSet('Backup', 'Restore')]
     [string]$Operation
 )

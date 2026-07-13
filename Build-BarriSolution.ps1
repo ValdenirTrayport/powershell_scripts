@@ -1,3 +1,23 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Performs a full clean build of the Barri solution stack.
+
+.DESCRIPTION
+    1. Deletes bin/obj folders (excluding GVAPIWrapper).
+    2. Builds BusinessSystemsCommon.sln (MSBuild).
+    3. Restores and builds Trayport.sln (MSBuild, .NET Framework).
+    4. Restores and builds Barri.sln (dotnet CLI, .NET 10).
+    Generates detailed and warnings-only build logs in C:\dev\BuildLogs.
+
+.EXAMPLE
+    .\Build-BarriSolution.ps1
+#>
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+
 $baseBarriPath = "C:\dev\BusinessSystems.Barri"
 $baseCommonPath = "C:\dev\BusinessSystems.Common"
 $logDirectory = "C:\dev\BuildLogs"
