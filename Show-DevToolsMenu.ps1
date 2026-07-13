@@ -36,6 +36,11 @@ function Show-DevToolsMenu {
         @{ Label = "Get-BackupFileReport";       Description = "Report .bak files and disk usage";         Action = { & 'C:\scripts\Get-BackupFileReport.ps1' } }
         @{ Label = "Invoke-IndexAutomation";     Description = "Deploy/rollback performance indexes";      Action = { $a = Read-Host "Action (Implement/Revert)"; $e = Read-Host "Environment (Local/Test/Approval/ApprovalSlim)"; if ($a -and $e) { & 'C:\scripts\Invoke-IndexAutomation.ps1' -Action $a -Environment $e } } }
         @{ Label = "Reset-BillingPeriod";        Description = "Reset a billing period (Local/Test/Appr)"; Action = { $e = Read-Host "Environment (Local/Test/Approval)"; $p = Read-Host "PeriodID"; if ($e -and $p -match '^\d+$') { & 'C:\scripts\Reset-BillingPeriod.ps1' -Environment $e -PeriodID ([int]$p) } else { Write-Host "Invalid input." -ForegroundColor Red } } }
+        @{ Label = "Install-DotNetHosting";      Description = "Deploy .NET Hosting Bundle to servers";    Action = { & 'C:\scripts\Install-DotNetHosting.ps1' } }
+        @{ Label = "Get-DotNetServerVersion";    Description = "Query .NET versions on remote servers";    Action = { & 'C:\scripts\Get-DotNetServerVersion.ps1' } }
+        @{ Label = "Import-SqlScript";           Description = "Import a large SQL file via sqlcmd";       Action = { $f = Read-Host "Full path to SQL file"; if ($f -and (Test-Path -LiteralPath $f)) { & 'C:\scripts\Import-SqlScript.ps1' -FilePath $f } else { Write-Host "File not found." -ForegroundColor Red } } }
+        @{ Label = "Get-ProjectFrameworkVersion"; Description = "Report .NET framework versions from .csproj"; Action = { & 'C:\scripts\Get-ProjectFrameworkVersion.ps1' } }
+        @{ Label = "Sync-SolutionFolder";        Description = "Sync folder structure to .sln file";       Action = { $s = Read-Host "Solution file path"; $t = Read-Host "Target folder path"; if ($s -and $t) { & 'C:\scripts\Sync-SolutionFolder.ps1' -SolutionPath $s -TargetFolderPath $t } } }
     )
 
     $filterText = ""
