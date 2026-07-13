@@ -12,3 +12,9 @@ obj/
 # OS-generated
 Thumbs.db
 desktop.ini
+
+# Machine-specific SQL config (contains secrets)
+RestoreDatabaseBackup/psscripts/DEVLAP67/
+RestoreDatabaseBackup/psscripts/DEVWS424/
+RestoreDatabaseBackup/psscripts/DEVWS454/
+RestoreDatabaseBackup/psscripts/DEVWS543/
