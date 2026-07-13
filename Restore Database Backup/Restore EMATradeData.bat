@@ -1,0 +1,1 @@
+Powershell.exe -Command "& {Start-Process PowerShell.exe -ArgumentList '-ExecutionPolicy Bypass -File ""\\kaizar\Operations\itsm\Business Systems\Scripts\Restore Database Backup\psscripts\RestoreEmaTradeData.ps1""'}"

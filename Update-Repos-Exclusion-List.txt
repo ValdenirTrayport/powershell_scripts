@@ -1,0 +1,21 @@
+BARRI
+BusinessSystems.Barri
+BusinessSystems.Barri - Before loosing git
+BusinessSystems.Barri - Copy
+BusinessSystems.Barri_UITesting
+BusinessSystems.Barri-KendoMigration
+BusinessSystems.Barri.bfg-report
+DockerWebFullFramework
+DokcerAppCore
+EexDataCollectionSftpFolderStructure
+Hangfire.Tags
+personal
+pluralsight
+ReferenceData
+Tcms.RefData
+Tcms.Scripts
+Trayport
+Trayport.Accounts
+Trayport.Barri.IntergrationServices
+UpdateInvoicePreviousRevenue
+BuildLogs

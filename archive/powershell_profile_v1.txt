@@ -1,0 +1,182 @@
+# --- HELP MENU FUNCTION ---
+
+function menu {
+    <#
+    .SYNOPSIS
+    Displays a custom menu of all Barri and Utility functions in a formatted ASCII table.
+    #>
+    Write-Host "`n __________________________________________________________________________ " -ForegroundColor Cyan
+    Write-Host "| Alias | Function Name            | Description                           |" -ForegroundColor Cyan
+    Write-Host "|--------------------------------------------------------------------------|" -ForegroundColor Cyan
+    Write-Host "|                         BARRI DEVELOPMENT TOOLS                          |" -ForegroundColor Cyan
+    Write-Host "|--------------------------------------------------------------------------|" -ForegroundColor Cyan
+    
+    # Barri Tools Section
+    Write-Host "| gb    | Go-Barri                 | Jump to the Barri project folder      |"
+    Write-Host "| rb    | Restore-Barri            | Run the local DB restoration script   |"
+    Write-Host "| mb    | Migrate-Barri            | Run Barri database migrations         |"
+    Write-Host "| rbm   | Restore-Barri-Migrate    | Full DB reset (Restore + Migrate)     |"
+    Write-Host "| bs    | Barri-Scaffold           | Launch EF scaffolding in VS context   |"
+    Write-Host "| rbt   | Revert-Billing-Test      | Reverts a whole billing month (test)  |"
+    Write-Host "| rbd   | Revert-Biling-Dev        | Reverts a whole billing month (local) |"
+    
+    # Separator for System Utilities
+    Write-Host "|--------------------------------------------------------------------------|" -ForegroundColor Yellow
+    Write-Host "|                            SYSTEM & UTILITIES                            |" -ForegroundColor Yellow
+    Write-Host "|--------------------------------------------------------------------------|" -ForegroundColor Yellow
+    Write-Host "| mm    | Migrate-Monitoring       | Run monitoring database migrations    |"
+    Write-Host "| rc    | Restore-Config           | Restore configuration backups         |"
+    Write-Host "| gip   | Get-InvoicePeriod        | SQL Query: Invoice Periods (2-digit)  |"
+    Write-Host "| gmb   | Invoke-GitMigrationBatch | Move files + preserve Git history     |"
+    Write-Host "|_______|__________________________|_______________________________________|" -ForegroundColor Yellow
+    
+    Write-Host "`n Type 'Get-Help <function-name>' for detailed info.`n" -ForegroundColor Gray
+}
+
+# --- NAVIGATION & DB FUNCTIONS ---
+
+function Go-Barri {
+    <# 
+    .SYNOPSIS Navigates to the BusinessSystems.Barri directory.
+    #>
+    Set-Location -Path "C:\dev\BusinessSystems.Barri"
+}
+
+function Restore-Barri {
+    <# .SYNOPSIS Executes the sanitized database restoration script. #>
+    & 'C:\dev\BusinessSystems.Barri\Deployment Scripts\LocalDev\RestoreBarriSanitized.ps1'
+}
+
+function Migrate-Barri {
+    <# .SYNOPSIS Executes the Barri migration batch file. #>
+    & 'C:\scripts\migratebarri.bat'
+}
+
+function Restore-Barri-Migrate {
+    <# .SYNOPSIS Clears the screen, restores the DB, and runs migrations. #>
+    cls
+    Restore-Barri
+    Migrate-Barri
+}
+
+function Barri-Scaffold {
+    <# .SYNOPSIS Opens VS 2022 Dev Cmd context, navigates to Barri, and runs the scaffolder. #>
+    $targetDir  = "C:\dev\BusinessSystems.Barri\Trayport.BS.Entities.Barri"
+    $connString = "Data Source=localhost;Initial Catalog=TRAYINVOICE;Integrated Security=True;TrustServerCertificate=True;Encrypt=True"
+
+    $progFiles = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::ProgramFilesX86)
+    if ([string]::IsNullOrEmpty($progFiles)) { $progFiles = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::ProgramFiles) }
+    
+    $vsWherePath = Join-Path $progFiles "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (-not (Test-Path $vsWherePath)) { Write-Error "Could not find vswhere.exe"; return }
+
+    $vsInstallPath = & $vsWherePath -latest -version "[17.0,18.0)" -products * -requires Microsoft.VisualStudio.Component.Roslyn.Compiler -property installationPath
+    if (-not $vsInstallPath) { Write-Error "VS 2022 not found."; return }
+
+    $vsDevCmd = "$vsInstallPath\Common7\Tools\VsDevCmd.bat"
+    $innerCommand = "`"$vsDevCmd`" && cd /d `"$targetDir`" && .\scaffold-database `"$connString`""
+
+    Write-Host "Launching VS 2022 Environment..." -ForegroundColor Cyan
+    Start-Process "cmd.exe" -ArgumentList "/k `"$innerCommand`"" -NoNewWindow
+    exit
+}
+
+# --- MONITORING & MISC ---
+
+function Migrate-Monitoring {
+    <# .SYNOPSIS Runs the monitoring migration batch script. #>
+    & 'C:\scripts\migratemonitoring.bat'
+}
+
+function Restore-Config {
+    <# .SYNOPSIS Restores configuration files using the backup-restore script. #>
+   C:\scripts\backup-restore-config.ps1 -Operation Restore
+}
+
+function Invoke-GitMigrationBatch {
+    <#
+    .SYNOPSIS Batch moves files using mvkh.ps1, preserving git history.
+    .PARAMETER SearchPattern The wildcard pattern (e.g., "*.cs").
+    .PARAMETER DestinationFolder The target directory.
+    .PARAMETER DryRun If specified, only lists files to be moved.
+    #>
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param(
+        [Parameter(Mandatory=$true, Position=0)] [string]$SearchPattern,
+        [Parameter(Mandatory=$true, Position=1)] [string]$DestinationFolder,
+        [switch]$DryRun
+    )
+    # ... (rest of your logic remains same)
+    $filesToMove = Get-ChildItem -Path . -Filter $SearchPattern -File
+    if ($DryRun) {
+        $filesToMove | Select-Object Name, FullName | Format-Table -AutoSize
+        return
+    }
+    foreach ($file in $filesToMove) {
+        if ($PSCmdlet.ShouldProcess($file.Name)) {
+            mvkh.ps1 -SourceFilePath $file.FullName -DestinationFile $DestinationFolder
+        }
+    }
+}
+
+function Get-InvoicePeriod {
+    <# .SYNOPSIS Queries TRAYINVOICE for periods in a specific year (2-digit input). #>
+    param(
+        [Parameter(Mandatory=$true)] [ValidateRange(0, 49)] [int]$Year
+    )
+    $FullYear = $Year + 2000
+    $connString = "Data Source=localhost;Initial Catalog=TRAYINVOICE;Integrated Security=True;TrustServerCertificate=True;Encrypt=True"
+    $query = "SELECT * FROM InvoicePeriods WHERE DATEPART(year, PeriodStartDate) = $FullYear"
+    Invoke-Sqlcmd -ConnectionString $connString -Query $query | Format-Table -AutoSize
+}
+
+function Revert-Billing-Dev {
+    <#
+    .SYNOPSIS
+    Relays a call to the global revert-billing-dev.ps1 script.
+    .PARAMETER PeriodID
+    The ID of the billing period to revert.
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$PeriodID
+    )
+
+    # Calling the script using its global name and passing the parameter
+    revert-billing-dev.ps1 -PeriodID $PeriodID
+}
+
+function Revert-Billing-Test {
+    <#
+    .SYNOPSIS
+    Relays a call to the global revert-billing-test.ps1 script.
+    .PARAMETER PeriodID
+    The ID of the billing period to revert.
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$PeriodID
+    )
+
+    # Calling the script using its global name and passing the parameter
+    revert-billing-test.ps1 -PeriodID $PeriodID
+}
+
+# --- INITIALIZATION & ALIASES ---
+
+oh-my-posh init pwsh --config 'C:\Users\valdenirf\AppData\Local\Programs\oh-my-posh\themes\cloud-native-azure.omp.json' | Invoke-Expression
+
+Set-Alias gb  Go-Barri
+Set-Alias rb  Restore-Barri
+Set-Alias mb  Migrate-Barri
+Set-Alias mm  Migrate-Monitoring
+Set-Alias rbm Restore-Barri-Migrate
+Set-Alias bs  Barri-Scaffold
+Set-Alias rc  Restore-Config
+Set-Alias gip Get-InvoicePeriod
+Set-Alias gmb Invoke-GitMigrationBatch
+Set-Alias rbt Revert-Billing-Test
+Set-Alias rbd Revert-Billing-Dev
+
+# Optional: Automatically show menu on startup
+# menu
