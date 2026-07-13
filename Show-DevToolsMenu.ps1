@@ -23,19 +23,19 @@ function Show-DevToolsMenu {
         @{ Label = "Invoke-BarriMigration";      Description = "Run Barri database migrations (Flyway)";   Action = { & 'C:\scripts\Invoke-BarriMigration.ps1' } }
         @{ Label = "Invoke-BarriResetAndMigrate"; Description = "Full DB reset (Restore + Migrate)";       Action = { & 'C:\dev\BusinessSystems.Barri\Deployment Scripts\LocalDev\RestoreBarriSanitized.ps1'; & 'C:\scripts\Invoke-BarriMigration.ps1' } }
         @{ Label = "Invoke-BarriScaffold";       Description = "Launch EF scaffolding in VS context";      Action = { Invoke-BarriScaffold } }
-        @{ Label = "Reset-BillingPeriod";        Description = "Reset a billing period (Local/Test/Appr)"; Action = { Write-Host "Usage: Reset-BillingPeriod -Environment <Env> -PeriodID <ID>" -ForegroundColor Cyan } }
         @{ Label = "Update-Repos";               Description = "Scan all repos in C:\dev and pull";        Action = { & 'C:\scripts\Update-Repos.ps1' } }
         @{ Label = "Invoke-MonitoringMigration"; Description = "Run monitoring database migrations";       Action = { & 'C:\scripts\Invoke-MonitoringMigration.ps1' } }
         @{ Label = "Sync-ConfigBackup";          Description = "Backup or restore config files";           Action = { & 'C:\scripts\Sync-ConfigBackup.ps1' -Operation Restore } }
-        @{ Label = "Get-InvoicePeriod";          Description = "Query invoice periods by year";            Action = { Write-Host "Usage: Get-InvoicePeriod -Year <2-digit>" -ForegroundColor Cyan } }
-        @{ Label = "Move-GitFileWithHistory";    Description = "Batch move files preserving git history";  Action = { Write-Host "Usage: Move-GitFileWithHistory -SourceFilePath <path> -DestinationFile <path>" -ForegroundColor Cyan } }
+        @{ Label = "Get-InvoicePeriod";          Description = "Query invoice periods by year";            Action = { $y = Read-Host "Enter 2-digit year (e.g. 25 for 2025)"; if ($y -match '^\d{1,2}$') { Get-InvoicePeriod -Year ([int]$y) } else { Write-Host "Invalid year." -ForegroundColor Red } } }
+        @{ Label = "Move-GitFileWithHistory";    Description = "Batch move files preserving git history";  Action = { $s = Read-Host "Source file path"; $d = Read-Host "Destination path"; if ($s -and $d) { & 'C:\scripts\Move-GitFileWithHistory.ps1' -SourceFilePath $s -DestinationFile $d } } }
         @{ Label = "Backup-Script";              Description = "Archive and version a script";             Action = { & 'C:\scripts\Backup-Script.ps1' } }
         @{ Label = "Approve-SnapshotTestFile";   Description = "Manage snapshot test approvals";           Action = { & 'C:\scripts\Approve-SnapshotTestFile.ps1' } }
         @{ Label = "Build-BarriSolution";        Description = "Full rebuild of Barri solution";           Action = { & 'C:\scripts\Build-BarriSolution.ps1' } }
         @{ Label = "Clear-BarriHangfire";        Description = "Clear Hangfire job tables locally";        Action = { & 'C:\scripts\Clear-BarriHangfire.ps1' } }
         @{ Label = "Restore-Database";           Description = "Interactive DB restore menu";              Action = { & 'C:\scripts\Restore-Database.ps1' } }
         @{ Label = "Get-BackupFileReport";       Description = "Report .bak files and disk usage";         Action = { & 'C:\scripts\Get-BackupFileReport.ps1' } }
-        @{ Label = "Invoke-IndexAutomation";     Description = "Deploy/rollback performance indexes";      Action = { Write-Host "Usage: Invoke-IndexAutomation -Action <Implement|Revert> -Environment <Env>" -ForegroundColor Cyan } }
+        @{ Label = "Invoke-IndexAutomation";     Description = "Deploy/rollback performance indexes";      Action = { $a = Read-Host "Action (Implement/Revert)"; $e = Read-Host "Environment (Local/Test/Approval/ApprovalSlim)"; if ($a -and $e) { & 'C:\scripts\Invoke-IndexAutomation.ps1' -Action $a -Environment $e } } }
+        @{ Label = "Reset-BillingPeriod";        Description = "Reset a billing period (Local/Test/Appr)"; Action = { $e = Read-Host "Environment (Local/Test/Approval)"; $p = Read-Host "PeriodID"; if ($e -and $p -match '^\d+$') { & 'C:\scripts\Reset-BillingPeriod.ps1' -Environment $e -PeriodID ([int]$p) } else { Write-Host "Invalid input." -ForegroundColor Red } } }
     )
 
     $filterText = ""
