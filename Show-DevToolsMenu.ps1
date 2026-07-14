@@ -23,6 +23,7 @@ function Show-DevToolsMenu {
         @{ Label = "Invoke-BarriMigration";      Description = "Run Barri database migrations (Flyway)";   Action = { & 'C:\scripts\Invoke-BarriMigration.ps1' } }
         @{ Label = "Invoke-BarriResetAndMigrate"; Description = "Full DB reset (Restore + Migrate)";       Action = { & 'C:\dev\BusinessSystems.Barri\Deployment Scripts\LocalDev\RestoreBarriSanitized.ps1'; & 'C:\scripts\Invoke-BarriMigration.ps1' } }
         @{ Label = "Invoke-BarriScaffold";       Description = "Launch EF scaffolding in VS context";      Action = { Invoke-BarriScaffold } }
+        @{ Label = "Scaffold Database in Barri"; Description = "Scaffold EF database contexts (sub-menu)"; Action = { & 'C:\scripts\Invoke-BarriDatabaseScaffold.ps1' } }
         @{ Label = "Update-Repos";               Description = "Scan all repos in C:\dev and pull";        Action = { & 'C:\scripts\Update-Repos.ps1' } }
         @{ Label = "Invoke-MonitoringMigration"; Description = "Run monitoring database migrations";       Action = { & 'C:\scripts\Invoke-MonitoringMigration.ps1' } }
         @{ Label = "Sync-ConfigBackup";          Description = "Backup or restore config files";           Action = { & 'C:\scripts\Sync-ConfigBackup.ps1' -Operation Restore } }
